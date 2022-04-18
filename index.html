@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Deploy a Remix Contract</title>
+
+    <link rel="stylesheet" type="text/css" href="main.css" />
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+  </head>
+
+  <body>
+    <div>
+      <h1>Ethereum Secret Messenger</h1>
+      <hr />
+
+      <label for="message"
+        >This site writes a secret message to the Ethereum blockchain!</label
+      >
+      <input id="userInput" type="text" />
+
+      <button id="setMessageButton">Set secret message</button>
+      <button id="connectButton">Connect to MetaMask Wallet</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+
+    <script>
+      // Set a default account
+      let currentAccount = null;
+
+      // Connect a the web3 provider
+      if (typeof web3 !== "undefined") {
+        web3 = new Web3(ethereum);
+      } else {
+        web3 = new Web3(
+          new Web3.providers.HttpProvider(
+            "HTTP://127.0.0.1:7545"
+          )
+        );
+      }
+
+      // Get the contract address
+      const RemixContract = new web3.eth.Contract(
+        [
+          {
+            constant: false,
+            inputs: [
+              {
+                name: "x",
+                type: "string",
+              },
+            ],
+            name: "setMessage",
+            outputs: [],
+            payable: false,
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+          {
+            constant: true,
+            inputs: [],
+            name: "getMessage",
+            outputs: [
+              {
+                name: "",
+                type: "string",
+              },
+            ],
+            payable: false,
+            stateMutability: "view",
+            type: "function",
+          },
+        ],
+        "0x9734Ef0d9bD8e4e7C1D59C2e51c2a06Ee09Fd4F1"
+      );
+
+      // Get the contract abi
+      //var myMessage = RemixContract.at();
+
+      console.log(RemixContract);
+
+      $("#setMessageButton").click(function () {
+        RemixContract.methods.setMessage($("#userInput").val()).send(
+          {
+            from: currentAccount,
+          },
+          (error, transactionHash) => {
+            if (error) {
+              console.log(`An error occured ::: ${error}`);
+            } else {
+              console.log(
+                `Transaction completed successfully ::: ${transactionHash}`
+              );
+            }
+          }
+        );
+        console.log($("#userInput").val());
+      });
+
+      // For now, 'eth_accounts' will continue to always return an array
+      const handleAccountsChanged = (accounts) => {
+        if (accounts.length === 0) {
+          // MetaMask is locked or the user has not connected any accounts
+          console.log("Please connect to MetaMask.");
+        } else if (accounts[0] !== currentAccount) {
+          currentAccount = accounts[0];
+          // Do any other work!
+          web3.eth.defaultAccount = currentAccount;
+        }
+      }
+
+
+      const connect = () => {
+          console.log("Connecting to MetaMask...");
+        ethereum
+        .request({ method: 'eth_requestAccounts' })
+        .then(handleAccountsChanged)
+        .catch((err) => {
+          if (err.code === 4001) {
+            // EIP-1193 userRejectedRequest error
+            // If this happens, the user rejected the connection request.
+            console.log('Please connect to MetaMask.');
+          } else {
+            console.error(err);
+          }
+        });
+      };
+
+      $('#connectButton').click(connect);
+    </script>
+  </body>
+</html>
